@@ -1,10 +1,12 @@
+// Licensed under the Unlicense <https://unlicense.org/>
+// SPDX-License-Identifier: Unlicense
 #pragma once
 #include <memory>
 #include <type_traits>
 #include <vector>
 
-namespace sbo
-{
+namespace sbo{
+
     template<typename T, size_t MaxSize = 8, typename NonReboundT = T>
     struct small_buffer_vector_allocator{
         alignas(alignof(T)) std::byte m_smallBuffer[MaxSize * sizeof(T)];

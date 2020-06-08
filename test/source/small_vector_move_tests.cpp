@@ -1,3 +1,5 @@
+// Licensed under the Unlicense <https://unlicense.org/>
+// SPDX-License-Identifier: Unlicense
 #include <doctest/doctest.h>
 #include <small_vector/small_vector.h>
 

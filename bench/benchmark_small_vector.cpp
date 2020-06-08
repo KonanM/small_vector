@@ -1,11 +1,11 @@
+// Licensed under the Unlicense <https://unlicense.org/>
+// SPDX-License-Identifier: Unlicense
 #include <vector>
 #include <algorithm>
 #include <random>
+
 #include "SmallVector.h"
-
 #include "small_vector\small_vector.h"
-
-
 
 #include <benchmark/benchmark.h>
 
