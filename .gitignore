@@ -2,6 +2,6 @@
 /.vscode
 .DS_Store
 
-/.vs*
-/out*
+.vs/
+out/
 CMakeSettings.json

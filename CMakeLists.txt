@@ -50,8 +50,8 @@ target_include_directories(small_vector
     $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 
-add_library(small_vectorHeaders EXCLUDE_FROM_ALL ${headers})
-set_target_properties(small_vectorHeaders PROPERTIES LINKER_LANGUAGE CXX)
+add_library(small_vector_headers EXCLUDE_FROM_ALL ${headers})
+set_target_properties(small_vector_headers PROPERTIES LINKER_LANGUAGE CXX)
 
 # ---- Create an installable target ----
 # this allows users to install and find the library via `find_package()`.
