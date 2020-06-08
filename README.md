@@ -8,12 +8,11 @@
 
 # small_vector
 
-I will keep it short - `sbo::small_vector` is basically an adapter over `std::vector` with a small buffer. This means that `sbo::small_vector<T,N>` has a customizable initial capacity `N` that is not dynamically allocated on the heap, but on the stack.
+`sbo::small_vector` is an adapter over `std::vector` with a small buffer. This means that `sbo::small_vector<T,N>` has a customizable initial capacity `N` that is not dynamically allocated on the heap, but on the stack. This allows normal "small" cases to be fast (by avoiding heap allocations) without losing generality for large inputs.
 
 
-What makes this implementation unique (compared to allocators that use a small buffer) is that `sbo::small_vector` fully move constructible. While the small buffer is not active `sbo::small_vector` behaves identical to `std::vector` and a move is super cheap O(1). Since the small buffer memory is allocated on the stack and it is not relocatable (similar to `std::array`) an element wise move has to be performed when the small buffer is active O(N). 
+I like the simplicty of this implementation and that it is pretty much a drop in replacement for std::vector (compared to allocators that use a small buffer) and that `sbo::small_vector` is fully move constructible. While the small buffer is not active `sbo::small_vector` behaves identical to `std::vector` and a move is super cheap O(1). Since the small buffer memory is allocated on the stack and it is not relocatable (similar to `std::array`) an element wise move has to be performed when the small buffer is active O(N). 
 Otherwise it should basically behave identical to std::vector with the minor difference that moving might invalidate iterators to the `small_vector`.
-
 
 ## Implementation
 This implementation was basically inspired by a quite unknown customization point called ['propagate_on_container_move_assignment'](https://en.cppreference.com/w/cpp/named_req/AllocatorAwareContainer). 
@@ -27,7 +26,7 @@ After the allocator implementaion, I simply derived from `std::vector` and made 
     public:
         using vectorT = std::vector<T, small_buffer_vector_allocator<T, N>>;
         //default initialize with the small buffer size
-        small_vector() noexcept { vectorT::reserve(N); }
+        constexpr small_vector() noexcept { vectorT::reserve(N); }
         small_vector(const small_vector&) = default;
         small_vector& operator=(const small_vector&) = default;
         small_vector(small_vector&& other) noexcept(std::is_nothrow_move_constructible_v<T>) {
@@ -50,13 +49,30 @@ After the allocator implementaion, I simply derived from `std::vector` and made 
 
 ## Benchmarks
 
-I used google benmark to test the performance against `std::vector` and unsurprisingly `sbo::small_vector` is faster when the small buffer is active. When the small buffer is not active the performance is nearly identical (some overhead when constructing `sbo::small_vector`), but otherwise our allocator only performs very cheap operations compared to an allocation. Most of the timing gains can be achieved by saving the the dynamic allocation of `std::vector`. So for types that need a dynamic allocation themselves, I don't think `small_vector` is worth it. 
+I used google benmark to test the performance against `std::vector` and you can rerun the tests on your machine with 0 configuration overhead when you open the `CMakeLists.txt` folder bench.
+Some unsurprising key takeaways:
+
+- Constructing the `sbo::small_vector` is more expensive than (default) constructing `std::vector` or `llvm_smalvec::SmallVector`, because we introduce the overhead of having to call `.reserve()` (2ns vs. 10ns). 
+- The speed difference against other small vector implementations can be explained by this overhead
+- `sbo::small_vector` is faster when the small buffer is active, because we save the initial allocation
+- When the small buffer is not active the performance is nearly identical, because our allocator only performs very cheap operations compared to an allocation. 
+- For some use cases the better cache locality of `sbo::small_vector` can make a (small) difference (compared against a vector with it's size reserved)
+- Since most of the timing gains can be achieved by saving the the initial dynamic allocation of `std::vector`, I don't think `small_vector` is worth it for types that need a dynamic allocation.
+- It's seems to be easier for some compilers to completely optimize  
 
 So best use it for non allocating types where you (on average) only have a few elements .
-
 ## Usage
+There are three very easy options:
 
-
-
-## License (unlicense/public domain)
-Do whatever you want with this small piece of code :-)
+- simply copy the header to your project
+- copy the few lines of code directly
+- use CPM 
+```
+CPMAddPackage(
+  NAME small_vector
+  GITHUB_REPOSITORY konanM/small_vector
+  VERSION 1.0
+)
+```
+## License (unlicense)
+See https://unlicense.org
