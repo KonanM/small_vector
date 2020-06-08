@@ -66,7 +66,7 @@ namespace sbo{
     public:
         using vectorT = std::vector<T, small_buffer_vector_allocator<T, N>>;
         //default initialize with the small buffer size
-        small_vector() noexcept { vectorT::reserve(N); }
+        constexpr small_vector() noexcept { vectorT::reserve(N); }
         small_vector(const small_vector&) = default;
         small_vector& operator=(const small_vector&) = default;
         small_vector(small_vector&& other) noexcept(std::is_nothrow_move_constructible_v<T>) {
