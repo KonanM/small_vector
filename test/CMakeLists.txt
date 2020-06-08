@@ -39,14 +39,14 @@ CPMAddPackage(
 file(GLOB sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
 add_executable(small_vector_tests ${sources})
 target_link_libraries(small_vector_tests doctest small_vector)
+set_target_properties(small_vector_tests PROPERTIES CXX_STANDARD 17)
 
 # enable compiler warnings
 if (NOT TEST_INSTALLED_VERSION)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    target_compile_options(small_vector INTERFACE -Wall -Wextra -Wpedantic -Wno-c++98-compat -Wno-c++14-compat -Wno-missing-prototypes)
+    target_compile_options(small_vector_tests INTERFACE -Wall -Wextra -Wpedantic -Wno-c++98-compat -Wno-c++14-compat -Wno-missing-prototypes)
   elseif(MSVC)
-    target_compile_options(small_vector INTERFACE /W4 /Ob3 /GL /Gv /Arch:AVX)
-    target_link_options(small_vector_tests PRIVATE /LTCG)
+    target_compile_options(small_vector_tests INTERFACE /W4 /Ob3 /Arch:AVX)
     target_compile_definitions(small_vector_tests PUBLIC DOCTEST_CONFIG_USE_STD_HEADERS)
   endif()
 endif()

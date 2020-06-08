@@ -1,6 +1,8 @@
 // Licensed under the Unlicense <https://unlicense.org/>
 // SPDX-License-Identifier: Unlicense
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
+
 #include <small_vector/small_vector.h>
 
 #include <iostream>
