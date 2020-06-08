@@ -10,8 +10,7 @@
 
 `sbo::small_vector` is an adapter over `std::vector` with a small buffer. This means that `sbo::small_vector<T,N>` has a customizable initial capacity `N` that is not dynamically allocated on the heap, but on the stack. This allows normal "small" cases to be fast (by avoiding heap allocations) without losing generality for large inputs.
 
-
-I like the simplicty of this implementation and that it is pretty much a drop in replacement for std::vector (compared to allocators that use a small buffer) and that `sbo::small_vector` is fully move constructible. While the small buffer is not active `sbo::small_vector` behaves identical to `std::vector` and a move is super cheap O(1). Since the small buffer memory is allocated on the stack and it is not relocatable (similar to `std::array`) an element wise move has to be performed when the small buffer is active O(N). 
+I like the simplicty of this implementation and that `sbo::small_vector` is fully move constructible/ assignable. While the small buffer is not active `sbo::small_vector` behaves identical to `std::vector` and a move is super cheap O(1). Since the small buffer memory is allocated on the stack and it is not relocatable (similar to `std::array`) an element wise move has to be performed when the small buffer is active O(N). 
 Otherwise it should basically behave identical to std::vector with the minor difference that moving might invalidate iterators to the `small_vector`.
 
 ## Implementation
@@ -49,7 +48,7 @@ After the allocator implementaion, I simply derived from `std::vector` and made 
 
 ## Benchmarks
 
-I used google benmark to test the performance against `std::vector` and you can rerun the tests on your machine with 0 configuration overhead when you open the `CMakeLists.txt` folder bench.
+I used google benmark to test the performance against `std::vector` and `llvm_smalvec::SmallVector`. You can rerun the tests on your machine with 0 configuration overhead when you open the `CMakeLists.txt` folder bench.
 Some unsurprising key takeaways:
 
 - Constructing the `sbo::small_vector` is more expensive than (default) constructing `std::vector` or `llvm_smalvec::SmallVector`, because we introduce the overhead of having to call `.reserve()` (2ns vs. 10ns). 
@@ -60,7 +59,7 @@ Some unsurprising key takeaways:
 - Since most of the timing gains can be achieved by saving the the initial dynamic allocation of `std::vector`, I don't think `small_vector` is worth it for types that need a dynamic allocation.
 - It's seems to be easier for some compilers to completely optimize  
 
-So best use it for non allocating types where you (on average) only have a few elements .
+So best use it for non allocating types where you (on average) only have a few elements.
 ## Usage
 There are three very easy options:
 
