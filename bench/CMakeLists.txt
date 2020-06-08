@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 project(small_vector_benchmark
   LANGUAGES CXX
 )
+include(../cmake/tools.cmake)
 
 # ---- Options ----
 
@@ -16,16 +17,13 @@ set(gtest_force_shared_crt ON CACHE BOOL "Always use msvcrt.dll" FORCE)
 set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
 set(BENCHMARK_ENABLE_TESTING OFF)
 set(BENCHMARK_ENABLE_INSTALL OFF)
-option(BENCHMARK_ENABLE_LTO ON)
-FetchContent_Declare(
-  benchmark
-  GIT_REPOSITORY https://github.com/google/benchmark.git
-  GIT_TAG        master
-)
-# Add googletest directly to our build. This defines
-# the gtest and gtest_main targets.
-FetchContent_MakeAvailable(benchmark)
+set(BENCHMARK_ENABLE_LTO ON)
 
+CPMAddPackage(
+  NAME benchmark
+  GIT_REPOSITORY https://github.com/google/benchmark.git
+  VERSION 1.5.0
+)
 # ---- Dependencies ----
 
 include(../cmake/CPM.cmake)
@@ -48,7 +46,7 @@ if (NOT TEST_INSTALLED_VERSION)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     target_compile_options(benchmark_small_vector PRIVATE -Wall -Wextra -Wpedantic -Wno-c++98-compat -Wno-c++14-compat -Wno-missing-prototypes -Wno-global-constructors -march=native)
   elseif(MSVC)
-    target_compile_options(benchmark_small_vector PRIVATE /W4 /Ob3 /GL /Gv /arch:AVX)
+    target_compile_options(benchmark_small_vector PRIVATE /W4 /Ob3 /GL /arch:AVX)
     target_link_options(benchmark_small_vector PRIVATE /LTCG)
   endif()
 endif()

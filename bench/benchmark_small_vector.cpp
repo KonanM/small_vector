@@ -1,12 +1,11 @@
-
-#include <array>
-#include <random>
 #include <vector>
 #include <algorithm>
-#include <chrono>
+#include <random>
 #include "SmallVector.h"
 
 #include "small_vector\small_vector.h"
+
+
 
 #include <benchmark/benchmark.h>
 
@@ -52,7 +51,9 @@ static void EmplaceBackReserve(benchmark::State& state) {
 
     for (auto _ : state) {
         (void)_;
+        state.PauseTiming();
         ContainerT v;
+        state.ResumeTiming();
         v.reserve(static_cast<size_t>(state.range(0)));
         for (int j = 0; j < state.range(0); ++j)
             v.emplace_back();
