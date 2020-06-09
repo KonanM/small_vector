@@ -65,6 +65,6 @@ doctest_discover_tests(small_vector_tests)
 # ---- code coverage ----
 
 if (ENABLE_TEST_COVERAGE)
-  target_compile_options(small_vector PUBLIC -O0 -g -fprofile-arcs -ftest-coverage)
-  target_link_options(small_vector PUBLIC -fprofile-arcs -ftest-coverage)
+  target_compile_options(small_vector_tests PUBLIC -O0 -g -fprofile-arcs -ftest-coverage)
+  target_link_options(small_vector_tests PUBLIC -fprofile-arcs -ftest-coverage)
 endif()

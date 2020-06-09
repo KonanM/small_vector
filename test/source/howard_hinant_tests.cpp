@@ -104,7 +104,8 @@ TEST_CASE("test no reallocation") {
   X::sp = {};
   SUBCASE("insert lvalue no reallocation") {
     v.insert(v.begin(), x);
-    CHECK(X::sp == X::special{0, 1, 1, 0, 1, 3});
+    //some implementations save a move when inserting
+    CHECK(X::sp == X::special{0, 1, 1, 0, 1, 3} || X::sp == X::special{0, 0, 0, 1, 1, 2});
   }
   SUBCASE("emplace lvalue no reallocation") {
     v.emplace(v.begin(), x);
@@ -112,7 +113,8 @@ TEST_CASE("test no reallocation") {
   }
   SUBCASE("insert xvalue no reallocation") {
     v.insert(v.begin(), std::move(x));
-    CHECK(X::sp == X::special{ 0, 1, 0, 0, 2, 3 });
+    //some implementations save a move when inserting
+    CHECK(X::sp == X::special{0, 1, 0, 0, 2, 3} || X::sp == X::special{0, 0, 0, 0, 1, 3});
   }
   SUBCASE("emplace xvalue no reallocation") {
     v.emplace(v.begin(), std::move(x));
@@ -120,7 +122,8 @@ TEST_CASE("test no reallocation") {
   }
   SUBCASE("insert rvalue no reallocation") {
     v.insert(v.begin(), X{0, nullptr});
-    CHECK(X::sp == X::special{1, 2, 0, 0, 2, 3});
+    //some implementations save a move when inserting
+    CHECK(X::sp == X::special{1, 2, 0, 0, 2, 3} || X::sp == X::special{1, 1, 0, 0, 1, 3});
   }
   SUBCASE("emplace rvalue no reallocation") {
     v.emplace(v.begin(), X{0, nullptr});
