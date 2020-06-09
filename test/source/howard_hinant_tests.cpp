@@ -117,7 +117,7 @@ TEST_CASE("test no reallocation") {
   SUBCASE("emplace xvalue no reallocation") {
     v.emplace(v.begin(), std::move(x));
     CHECK(X::sp.ma >= 1);
-    CHECK(X::sp.mc == 3);
+    CHECK(X::sp.mc >= 1);
   }
   SUBCASE("insert rvalue no reallocation") {
     v.insert(v.begin(), X{0, nullptr});
@@ -126,7 +126,7 @@ TEST_CASE("test no reallocation") {
   SUBCASE("emplace rvalue no reallocation") {
     v.emplace(v.begin(), X{0, nullptr});
     CHECK(X::sp.ma >= 1);
-    CHECK(X::sp.mc == 3);
+    CHECK(X::sp.mc >= 1);
   }
   SUBCASE("push_back rvalue no reallocation") {
     v.push_back(x);
