@@ -1,6 +1,7 @@
 // Licensed under the Unlicense <https://unlicense.org/>
 // SPDX-License-Identifier: Unlicense
 #pragma once
+#include <cstddef>
 #include <memory>
 #include <type_traits>
 #include <vector>
