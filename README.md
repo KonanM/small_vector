@@ -1,7 +1,6 @@
 [![Actions Status](https://github.com/KonanM/small_vector/workflows/MacOS/badge.svg)](https://github.com/KonanM/small_vector/actions)
 [![Actions Status](https://github.com/KonanM/small_vector/workflows/Windows/badge.svg)](https://github.com/KonanM/small_vector/actions)
 [![Actions Status](https://github.com/KonanM/small_vector/workflows/Ubuntu/badge.svg)](https://github.com/KonanM/small_vector/actions)
-[![Actions Status](https://github.com/KonanM/small_vector/workflows/Style/badge.svg)](https://github.com/KonanM/small_vector/actions)
 [![Actions Status](https://github.com/KonanM/small_vector/workflows/Install/badge.svg)](https://github.com/KonanM/small_vector/actions)
 
 <img src="logo.png" width="300" align="middle"/>
@@ -16,8 +15,8 @@ Otherwise it should basically behave identical to std::vector with the minor dif
 ## Implementation
 This implementation was basically inspired by a quite unknown customization point called ['propagate_on_container_move_assignment'](https://en.cppreference.com/w/cpp/named_req/AllocatorAwareContainer). 
 
-[Allocator aware](https://en.cppreference.com/w/cpp/named_req/AllocatorAwareContainer) containers like `std::vector` check for this property and do the element wise move when the allocators don't compare equal. So I implemted a small custom allocator which sets `propagate_on_container_move_assignment = false` and doesn't compare equal when the small buffer is active. 
-After the allocator implementaion, I simply derived from `std::vector` and made sure the constructors reserve the memory for the small buffer before they do any insertions. While the allocator implementation is quite short it was surprisingly tricky to get right (because an allocator can be rebound). The whole `small_vector` implementation is only a few lines, which hopefully only leaves little room for mistakes.
+[Allocator aware](https://en.cppreference.com/w/cpp/named_req/AllocatorAwareContainer) containers like `std::vector` check for this property and do the element wise move (for the move assigment constructor) when the allocators don't compare equal. So I implemted a small custom allocator which sets `propagate_on_container_move_assignment = false` and doesn't compare equal when the small buffer is active. 
+After the allocator implementaion, I simply derived from `std::vector` and made sure the constructors reserve the memory for the small buffer before they do any insertions. While also the allocator implementation is quite short it was surprisingly tricky to get right (because an allocator can be rebound). The whole `small_vector` implementation is only a few lines, which hopefully only leaves little room for mistakes.
 
 ```cpp
     template<typename T, size_t N = 8>
