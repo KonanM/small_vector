@@ -50,5 +50,22 @@ TEST_CASE("test_for_crash_access_used_moved_from_move_only_type") {
     for (unsigned i = 0; i < 50; ++i)
         CHECK(myVector2[i] == nullptr);
 }
+TEST_CASE("swap_test_small") {
+    sbo::small_vector<int, 10> ints1, ints2;
+    ints1.push_back(1);
+    ints2.push_back(0);
+    std::swap(ints1, ints2);
+    CHECK(ints1.front() == 0);
+    CHECK(ints2.front() == 1);
+}
+
+TEST_CASE("swap_test_big") {
+    sbo::small_vector<int, 10> ints1(20), ints2(15);
+    ints1[5] = 1;
+    ints2[6] = 2;
+    std::swap(ints1, ints2);
+    CHECK(ints1[6]== 2);
+    CHECK(ints2[5] == 1);
+}
 
 

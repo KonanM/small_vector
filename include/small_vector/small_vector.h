@@ -36,20 +36,22 @@ namespace sbo{
 
         [[nodiscard]] constexpr T* allocate(const size_t n) {
             //when the allocator was rebound we don't want to use the small buffer
-            if(std::is_same_v<T, NonReboundT> && n <= MaxSize) {
-                m_smallBufferUsed = true;
-                //as long as we use less memory than the small buffer, we return a pointer to it
-                return reinterpret_cast<T*>(&m_smallBuffer);
+            if constexpr (std::is_same_v<T, NonReboundT>) {
+                if (n <= MaxSize) {
+                    m_smallBufferUsed = true;
+                    //as long as we use less memory than the small buffer, we return a pointer to it
+                    return reinterpret_cast<T*>(&m_smallBuffer);
+                }
             }
             m_smallBufferUsed = false;
             //otherwise use the default allocator
             return m_alloc.allocate(n);
         }
         constexpr void deallocate(void* p, const size_t n) {
-            //we don't deallocate anything if the memory was allocated in small buffer
-            if (!m_smallBufferUsed && !((p >= &m_smallBuffer) && (p <= (&m_smallBuffer + MaxSize * sizeof(T)))))
-                m_alloc.deallocate(static_cast<T*>(p), n);
-            m_smallBufferUsed = false;
+          // we don't deallocate anything if the memory was allocated in small buffer
+          if (&m_smallBuffer != p) 
+              m_alloc.deallocate(static_cast<T*>(p), n);
+          m_smallBufferUsed = false;
         }
         //according to the C++ standard when propagate_on_container_move_assignment is set to false, the comparision operators are used 
         //to check if two allocators are equal. When they are not, an element wise move is done instead of just taking over the memory. 
@@ -82,8 +84,12 @@ namespace sbo{
         //use the default constructor first to reserve then construct the values
         explicit small_vector(size_t count) : small_vector() { vectorT::resize(count); }
         small_vector(size_t count, const T& value) : small_vector() { vectorT::assign(count, value); }
-        template< class InputIt >
+        template<class InputIt>
         small_vector(InputIt first, InputIt last) : small_vector()   { vectorT::insert(vectorT::begin(), first, last); }
         small_vector(std::initializer_list<T> init) : small_vector() { vectorT::insert(vectorT::begin(), init); }
+        friend void swap(small_vector& a, small_vector& b) noexcept {
+            using std::swap;
+            swap(static_cast<vectorT&>(a), static_cast<vectorT&>(b));
+        }
     };
 }
