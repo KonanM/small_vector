@@ -16,7 +16,7 @@ Otherwise it should basically behave identical to std::vector with the minor dif
 This implementation was basically inspired by a quite unknown customization point called ['propagate_on_container_move_assignment'](https://en.cppreference.com/w/cpp/named_req/AllocatorAwareContainer), but lets start with the basics.
 For our purposes we need a stack allocated piece of memory, which I will refer to as the small buffer. The small buffer can be used to insert elements until we reach `MaxSize`. For memory requests bigger than the small buffer, we will simply use a `std::alllocator`.
 
-Lets have a look at how the basic implementation works: 
+The basic requirements for an allocator are quite simple - provide a value type, an allocate and deallocate function (see also https://howardhinnant.github.io/allocator_boilerplate.html ). Lets have a look at how the basic implementation works: 
 ```cpp
 template<typename T, size_t MaxSize>
 struct small_buffer_vector_allocator{
@@ -51,7 +51,7 @@ struct small_buffer_vector_allocator{
     }
 ```
 
-The last piece for the allocator is implementation for the allocate and deallocate member functions. The real implementation is a bit more complex, due to one implementation detail I left out (allocator rebinding, which is often usedfor the implmentation for debug iterators), but since it otherwise doesn't differ I will keep it a bit more simple here.
+The last missing pieces for the allocator implementation are the allocate and deallocate member functions. The real implementation is a bit more complex, due to one implementation detail I left out (allocator rebinding, which is often usedfor the implmentation for debug iterators), but since it otherwise doesn't differ I will keep it a bit more simple here.
 ```cpp
     [[nodiscard]] constexpr T* allocate(const size_t n) {
         //use the small buffer
