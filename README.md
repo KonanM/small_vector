@@ -13,10 +13,60 @@ I like the simplicty of this implementation and that `sbo::small_vector` is full
 Otherwise it should basically behave identical to std::vector with the minor difference that moving might invalidate iterators to the `small_vector`.
 
 ## Implementation
-This implementation was basically inspired by a quite unknown customization point called ['propagate_on_container_move_assignment'](https://en.cppreference.com/w/cpp/named_req/AllocatorAwareContainer). 
+This implementation was basically inspired by a quite unknown customization point called ['propagate_on_container_move_assignment'](https://en.cppreference.com/w/cpp/named_req/AllocatorAwareContainer), but lets start with the basics.
+For our purposes we need a stack allocated piece of memory, which I will refer to as the small buffer. The small buffer can be used to insert elements until we reach `MaxSize`. For memory requests bigger than the small buffer, we will simply use a `std::alllocator`.
 
-[Allocator aware](https://en.cppreference.com/w/cpp/named_req/AllocatorAwareContainer) containers like `std::vector` check for this property and do the element wise move (for the move assigment constructor) when the allocators don't compare equal. So I implemted a small custom allocator which sets `propagate_on_container_move_assignment = false` and doesn't compare equal when the small buffer is active. 
-After the allocator implementaion, I simply derived from `std::vector` and made sure the constructors reserve the memory for the small buffer before they do any insertions. While also the allocator implementation is quite short it was surprisingly tricky to get right (because an allocator can be rebound). The whole `small_vector` implementation is only a few lines, which hopefully only leaves little room for mistakes.
+Lets have a look at how the basic implementation works: 
+```cpp
+template<typename T, size_t MaxSize>
+struct small_buffer_vector_allocator{
+    using value_type = T;
+    [[nodiscard]] constexpr T* allocate(const size_t n);
+    constexpr void deallocate(void* p, const size_t n);
+    
+    alignas(alignof(T)) std::byte m_smallBuffer[MaxSize * sizeof(T)];
+    std::allocator<T> m_alloc{};
+```
+
+[Allocator aware](https://en.cppreference.com/w/cpp/named_req/AllocatorAwareContainer) containers like `std::vector` check for a property called `propagate_on_container_move_assignment`, which is defaulted to true. 
+This property is needed when two allocators of the same type (but different instantiations) can't deallocate the memory of each other (usually needed for stateful allocators). 
+For a vector this means that (on move assignment), it's not possible to simply copy the pointer to the memory of the other vector, because the other vector couldn't deallocate it. 
+Instead the moved to vector has to make sure it has enough memory and an element wise move has to be performed into that memory. To indicate that an element wise move is necessary the two instances of the allocator should compare false.
+
+With this knowledge we can now implement our custom allocator:
+```cpp
+    bool m_smallBufferUsed = false;
+    using propagate_on_container_move_assignment = std::false_type;
+    using is_always_equal = std::false_type;
+    friend constexpr bool operator==(const small_buffer_vector_allocator& lhs, const small_buffer_vector_allocator& rhs) {
+        return !lhs.m_smallBufferUsed && !rhs.m_smallBufferUsed;
+    }
+    friend constexpr bool operator!=(const small_buffer_vector_allocator& lhs, const small_buffer_vector_allocator& rhs) {
+        return !(lhs == rhs);
+    }
+```
+
+The last piece for the allocator is implementation for the allocate and deallocate functions. The real implementation is a bit more complex, due to one implementation detail I left out (allocator rebinding, which is often usedfor the implmentation for debug iterators), but since it otherwise doesn't differ I will keep it a bit more simple here.
+
+        [[nodiscard]] constexpr T* allocate(const size_t n) {
+            //use the small buffer
+            if( n <= MaxSize) {
+                m_smallBufferUsed = true;
+                return reinterpret_cast<T*>(&m_smallBuffer);
+            }
+            m_smallBufferUsed = false;
+            //otherwise use the default allocator
+            return m_alloc.allocate(n);
+        }
+        constexpr void deallocate(void* p, const size_t n) {
+            //we don't deallocate anything if the memory was allocated in small buffer
+            if (!m_smallBufferUsed)
+                m_alloc.deallocate(static_cast<T*>(p), n);
+            m_smallBufferUsed = false;
+        }
+
+After the allocator implementaion, I simply derived from `std::vector` and made sure the constructors reserve the memory for the small buffer before they do any insertions. This whole `small_vector` implementation is only less than 100 lines (mostly constructors), which hopefully only leaves little room for mistakes.
+
 
 ```cpp
     template<typename T, size_t N = 8>
@@ -52,13 +102,14 @@ Some unsurprising key takeaways:
 
 - Constructing the `sbo::small_vector` is more expensive than (default) constructing `std::vector` or `llvm_smalvec::SmallVector`, because we introduce the overhead of having to call `.reserve()` (2ns vs. 10ns). 
 - The speed difference against other small vector implementations can be explained by this overhead
-- `sbo::small_vector` is faster when the small buffer is active, because we save the initial allocation
+- `sbo::small_vector` is faster than `std::vector` when the small buffer is active, because we save the initial allocation
 - When the small buffer is not active the performance is nearly identical, because our allocator only performs very cheap operations compared to an allocation. 
 - For some use cases the better cache locality of `sbo::small_vector` can make a (small) difference (compared against a vector with it's size reserved)
 - Since most of the timing gains can be achieved by saving the the initial dynamic allocation of `std::vector`, I don't think `small_vector` is worth it for types that need a dynamic allocation.
 - It's seems to be easier for some compilers to completely optimize  
 
-So best use it for non allocating types where you (on average) only have a few elements.
+tldr: Don't use this implementation if you need the last bit of performance, a custom `small_vector` is cheaper to construct. Use it when simplicity, correctness and exception safety matter.
+
 ## Usage
 There are three very easy options:
 
@@ -73,4 +124,4 @@ CPMAddPackage(
 )
 ```
 ## License (unlicense)
-See https://unlicense.org
+See https://unlicense.org, tldr: do whatever you want including removing the license
