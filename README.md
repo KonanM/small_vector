@@ -26,6 +26,8 @@ struct small_buffer_vector_allocator{
     
     alignas(alignof(T)) std::byte m_smallBuffer[MaxSize * sizeof(T)];
     std::allocator<T> m_alloc{};
+    //...
+};
 ```
 
 [Allocator aware](https://en.cppreference.com/w/cpp/named_req/AllocatorAwareContainer) containers like `std::vector` check for a property called `propagate_on_container_move_assignment`, which is defaulted to true. 
@@ -35,6 +37,9 @@ Instead the moved to vector has to make sure it has enough memory and an element
 
 With this knowledge we can now implement our custom allocator:
 ```cpp
+template<typename T, size_t MaxSize>
+struct small_buffer_vector_allocator{
+    //...
     bool m_smallBufferUsed = false;
     using propagate_on_container_move_assignment = std::false_type;
     using is_always_equal = std::false_type;
@@ -46,53 +51,53 @@ With this knowledge we can now implement our custom allocator:
     }
 ```
 
-The last piece for the allocator is implementation for the allocate and deallocate functions. The real implementation is a bit more complex, due to one implementation detail I left out (allocator rebinding, which is often usedfor the implmentation for debug iterators), but since it otherwise doesn't differ I will keep it a bit more simple here.
-
-        [[nodiscard]] constexpr T* allocate(const size_t n) {
-            //use the small buffer
-            if( n <= MaxSize) {
-                m_smallBufferUsed = true;
-                return reinterpret_cast<T*>(&m_smallBuffer);
-            }
-            m_smallBufferUsed = false;
-            //otherwise use the default allocator
-            return m_alloc.allocate(n);
+The last piece for the allocator is implementation for the allocate and deallocate member functions. The real implementation is a bit more complex, due to one implementation detail I left out (allocator rebinding, which is often usedfor the implmentation for debug iterators), but since it otherwise doesn't differ I will keep it a bit more simple here.
+```cpp
+    [[nodiscard]] constexpr T* allocate(const size_t n) {
+        //use the small buffer
+        if( n <= MaxSize) {
+            m_smallBufferUsed = true;
+            return reinterpret_cast<T*>(&m_smallBuffer);
         }
-        constexpr void deallocate(void* p, const size_t n) {
-            //we don't deallocate anything if the memory was allocated in small buffer
-            if (!m_smallBufferUsed)
-                m_alloc.deallocate(static_cast<T*>(p), n);
-            m_smallBufferUsed = false;
-        }
-
+        m_smallBufferUsed = false;
+        //otherwise use the default allocator
+        return m_alloc.allocate(n);
+    }
+    constexpr void deallocate(void* p, const size_t n) {
+        //we don't deallocate anything if the memory was allocated in small buffer
+        if (&m_smallBuffer != p)
+            m_alloc.deallocate(static_cast<T*>(p), n);
+        m_smallBufferUsed = false;
+    }
+```
 After the allocator implementaion, I simply derived from `std::vector` and made sure the constructors reserve the memory for the small buffer before they do any insertions. This whole `small_vector` implementation is only less than 100 lines (mostly constructors), which hopefully only leaves little room for mistakes.
 
 
 ```cpp
-    template<typename T, size_t N = 8>
-    class small_vector : public std::vector<T, small_buffer_vector_allocator<T, N>>{
-    public:
-        using vectorT = std::vector<T, small_buffer_vector_allocator<T, N>>;
-        //default initialize with the small buffer size
-        constexpr small_vector() noexcept { vectorT::reserve(N); }
-        small_vector(const small_vector&) = default;
-        small_vector& operator=(const small_vector&) = default;
-        small_vector(small_vector&& other) noexcept(std::is_nothrow_move_constructible_v<T>) {
-            vectorT::reserve(N);
-            vectorT::operator=(std::move(other));
-        }
-        small_vector& operator=(small_vector&& other) noexcept(std::is_nothrow_move_constructible_v<T>) {
-            vectorT::reserve(N);
-            vectorT::operator=(std::move(other));
-            return *this;
-        }
-        //use the default constructor first to reserve then construct the values
-        explicit small_vector(size_t count) : small_vector() { vectorT::resize(count); }
-        small_vector(size_t count, const T& value)  : small_vector() { vectorT::assign(count, value); }
-        template< class InputIt >
-        small_vector(InputIt first, InputIt last)   : small_vector() { vectorT::insert(vectorT::begin(), first, last); }
-        small_vector(std::initializer_list<T> init) : small_vector() { vectorT::insert(vectorT::begin(), init); }
-    };
+template<typename T, size_t N = 8>
+class small_vector : public std::vector<T, small_buffer_vector_allocator<T, N>>{
+public:
+    using vectorT = std::vector<T, small_buffer_vector_allocator<T, N>>;
+    //default initialize with the small buffer size
+    constexpr small_vector() noexcept { vectorT::reserve(N); }
+    small_vector(const small_vector&) = default;
+    small_vector& operator=(const small_vector&) = default;
+    small_vector(small_vector&& other) noexcept(std::is_nothrow_move_constructible_v<T>) {
+        vectorT::reserve(N);
+        vectorT::operator=(std::move(other));
+    }
+    small_vector& operator=(small_vector&& other) noexcept(std::is_nothrow_move_constructible_v<T>) {
+        vectorT::reserve(N);
+        vectorT::operator=(std::move(other));
+        return *this;
+    }
+    //use the default constructor first to reserve then construct the values
+    explicit small_vector(size_t count) : small_vector() { vectorT::resize(count); }
+    small_vector(size_t count, const T& value)  : small_vector() { vectorT::assign(count, value); }
+    template< class InputIt >
+    small_vector(InputIt first, InputIt last)   : small_vector() { vectorT::insert(vectorT::begin(), first, last); }
+    small_vector(std::initializer_list<T> init) : small_vector() { vectorT::insert(vectorT::begin(), init); }
+};
 ```
 
 ## Benchmarks
