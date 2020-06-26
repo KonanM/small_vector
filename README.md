@@ -83,11 +83,13 @@ public:
     small_vector(const small_vector&) = default;
     small_vector& operator=(const small_vector&) = default;
     small_vector(small_vector&& other) noexcept(std::is_nothrow_move_constructible_v<T>) {
-        vectorT::reserve(N);
+        if(other.size() <= N)
+            vectorT::reserve(N);
         vectorT::operator=(std::move(other));
     }
     small_vector& operator=(small_vector&& other) noexcept(std::is_nothrow_move_constructible_v<T>) {
-        vectorT::reserve(N);
+        if(other.size() <= N)
+            vectorT::reserve(N);
         vectorT::operator=(std::move(other));
         return *this;
     }
