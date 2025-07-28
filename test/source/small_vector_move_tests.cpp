@@ -68,4 +68,35 @@ TEST_CASE("swap_test_big") {
     CHECK(ints2[5] == 1);
 }
 
+TEST_CASE("copy_and_emplace_test") {
+  sbo::small_vector<int, 16> vec1;
+  for (int i = 0; i < 4; ++i) vec1.push_back(i);
 
+  sbo::small_vector<int, 16> vec2(vec1);  // copy construct from vec1
+  vec2.emplace(vec2.begin() + 2, 5);      // emplace 5 at index 2
+
+  // Correct behavior expected: [0, 1, 5, 2, 3]
+  CHECK(vec2.size() == 5);
+  CHECK(vec2[0] == 0);
+  CHECK(vec2[1] == 1);
+  CHECK(vec2[2] == 5);
+  CHECK(vec2[3] == 2);
+  CHECK(vec2[4] == 3);
+}
+
+TEST_CASE("copy_assign_and_emplace_test") {
+  sbo::small_vector<int, 16> vec1;
+  for (int i = 0; i < 4; ++i) vec1.push_back(i);
+
+  sbo::small_vector<int, 16> vec2;
+  vec2 = vec1;                      // copy assignment from vec1
+  vec2.emplace(vec2.begin() + 2, 5);      // emplace 5 at index 2
+
+  // Correct behavior expected: [0, 1, 5, 2, 3]
+  CHECK(vec2.size() == 5);
+  CHECK(vec2[0] == 0);
+  CHECK(vec2[1] == 1);
+  CHECK(vec2[2] == 5);
+  CHECK(vec2[3] == 2);
+  CHECK(vec2[4] == 3);
+}
